@@ -2,6 +2,8 @@
 import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const execFileAsync = promisify(execFile);
 const args = process.argv.slice(2);
@@ -27,7 +29,7 @@ function usage() {
 
 说明：
   - create / upsert 默认只预览；写入必须显式传 --confirm。
-  - upsert 依据 description 中的 eventId 标记幂等更新；提醒输入使用负秒数，写入 Calendar.app 前转换为分钟，并清理旧版本误按分钟写入的同值提醒。
+  - upsert 依据 description 中的 eventId 标记幂等更新；提醒输入使用负秒数，写入 Calendar.app 前转换为分钟。检测到旧版本误按分钟写入的提醒时拒绝更新，请先在 Calendar.app 中核对并清理旧提醒；不会自动重建整个事件。
   - delete 只允许按精确 calendar + uid 删除，不提供批量删除；实现使用 JXA 精确定位。
   - 输入合同见 interview-prep/templates/calendar-event.json。`);
 }
@@ -81,7 +83,7 @@ function appleDateExpression(date) {
   return `my makeCalendarDate(${parts.year}, ${MONTH_NAMES[parts.month - 1]}, ${parts.day}, ${parts.hour}, ${parts.minute}, ${parts.second})`;
 }
 
-function validateEvent(event) {
+export function validateEvent(event) {
   if (!event || typeof event !== 'object') fail('日历事件必须是 JSON 对象');
   if (event.version !== 1) fail('日历事件当前只支持 version=1');
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$/.test(event.eventId ?? '')) {
@@ -144,7 +146,7 @@ function descriptionWithMarker(event) {
   return `${eventMarker}\n${event.description}`;
 }
 
-function createOrUpdateAppleScript(event, mode) {
+export function createOrUpdateAppleScript(event, mode) {
   const calendar = appleString(event.calendar);
   const title = appleString(event.title);
   const description = appleString(descriptionWithMarker(event));
@@ -167,7 +169,7 @@ function createOrUpdateAppleScript(event, mode) {
       end repeat` : '';
   return `on run
   tell application "Calendar"
-    if not (exists calendar ${calendar}) then error "找不到日历: ${event.calendar}"
+    if not (exists calendar ${calendar}) then error ${appleString(`找不到日历: ${event.calendar}`)}
     tell calendar ${calendar}
       set targetEvent to missing value
       ${lookupStatements}
@@ -226,7 +228,7 @@ if (!event) throw new Error("找不到 UID 对应的事件: " + uid);
 event.delete();
 JSON.stringify("deleted");`;
 }
-function migrateLegacyAlarmsJxaSource(event) {
+export function inspectLegacyAlarmsJxaSource(event) {
   const calendarName = JSON.stringify(event.calendar);
   const eventMarker = JSON.stringify(marker(event.eventId));
   const legacyIntervals = JSON.stringify(event.alarms);
@@ -242,12 +244,9 @@ const event = calendar.events().find(item => (item.description() || "").includes
 let result = { action: "none", preservedAlarmMinutes: [] };
 if (event) {
   const intervals = event.displayAlarms().map(alarm => alarm.triggerInterval());
-  const legacyFound = intervals.filter(interval => legacyIntervals.includes(interval));
+  const legacyFound = intervals.filter(interval => legacyIntervals.includes(interval) && !desiredIntervals.includes(interval));
   if (legacyFound.length > 0) {
-    const preservedAlarmMinutes = [...new Set(intervals.filter(interval => !legacyIntervals.includes(interval) && !desiredIntervals.includes(interval)))];
-    const previousUid = event.uid();
-    event.delete();
-    result = { action: "recreate", previousUid, removedLegacyAlarmMinutes: legacyFound, preservedAlarmMinutes };
+    throw new Error("检测到旧格式提醒，请先在 Calendar.app 中核对并清理旧提醒后重试；为避免丢失事件，本命令拒绝自动重建");
   }
 }
 JSON.stringify(result);`;
@@ -324,6 +323,7 @@ function printPreview(event, mode) {
   }, null, 2));
 }
 
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 try {
   if (command === 'help' || command === '--help' || command === '-h') {
     usage();
@@ -349,17 +349,10 @@ try {
       printPreview(event, command);
     } else {
       let alarmMigration = { action: 'none', preservedAlarmMinutes: [] };
-      let appliedEvent = event;
       if (command === 'upsert') {
-        alarmMigration = await runJxa(migrateLegacyAlarmsJxaSource(event));
-        if (alarmMigration.action === 'recreate') {
-          appliedEvent = {
-            ...event,
-            alarmMinutes: [...new Set([...event.alarmMinutes, ...alarmMigration.preservedAlarmMinutes])]
-          };
-        }
+        alarmMigration = await runJxa(inspectLegacyAlarmsJxaSource(event));
       }
-      const result = await runAppleScript(createOrUpdateAppleScript(appliedEvent, command));
+      const result = await runAppleScript(createOrUpdateAppleScript(event, command));
       const [action, uid] = result.split('|');
       console.log(JSON.stringify({ mode: 'applied', action, eventId: event.eventId, calendar: event.calendar, uid, alarmMigration }, null, 2));
     }
@@ -376,4 +369,5 @@ try {
 } catch (error) {
   console.error(`${error.name}: ${error.message}`);
   process.exitCode = 1;
+}
 }

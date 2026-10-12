@@ -53,8 +53,14 @@ TMP_FILES=()
 CHROME_PROFILE="$(mktemp -d "${TMPDIR:-/tmp}/torpedo-career-workbench-chrome.XXXXXX")"
 CHROME_FLAGS=(--headless=new --disable-gpu --no-first-run --no-default-browser-check "--user-data-dir=$CHROME_PROFILE")
 CHROME_TIMEOUT="$(command -v timeout || command -v gtimeout || true)"
-CHROME_RUN=()
-[ -z "$CHROME_TIMEOUT" ] || CHROME_RUN=("$CHROME_TIMEOUT" 25s)
+run_chrome() {
+  # macOS 系统 Bash 3.2 在 set -u 下不能展开空数组。
+  if [ -n "$CHROME_TIMEOUT" ]; then
+    "$CHROME_TIMEOUT" 25s "$CHROME" "${CHROME_FLAGS[@]}" "$@"
+  else
+    "$CHROME" "${CHROME_FLAGS[@]}" "$@"
+  fi
+}
 cleanup() {
   [ ${#TMP_FILES[@]} -eq 0 ] || rm -f "${TMP_FILES[@]}"
   python3 - "$CHROME_PROFILE" <<'PY'
@@ -112,7 +118,7 @@ else
 fi
 
 # 框架内置布局探针：正文超出任一固定 sheet 时，构建失败而不是静默裁切。
-DOM="$("${CHROME_RUN[@]}" "$CHROME" "${CHROME_FLAGS[@]}" --dump-dom "file://$INPUT" 2>/dev/null || true)"
+DOM="$(run_chrome --dump-dom "file://$INPUT" 2>/dev/null || true)"
 if printf '%s' "$DOM" | perl -0e '
   my $dom = <>;
   exit 1 if $dom =~ /data-layout-fit="overflow"/;
@@ -137,7 +143,7 @@ fi
 OUT="$OUT_DIR/${RESUME_NAME:-示例候选人}-简历-${VARIANT}-${LABEL}-${STAMP}.pdf"
 rm -f "$OUT" "$LATEST"
 
-"${CHROME_RUN[@]}" "$CHROME" "${CHROME_FLAGS[@]}" --no-pdf-header-footer \
+run_chrome --no-pdf-header-footer \
   --print-to-pdf="$OUT" "file://$INPUT" >/dev/null 2>&1 || true
 [ -s "$OUT" ] || { echo "✗ Chrome 未生成 PDF"; exit 1; }
 if command -v pdfinfo >/dev/null 2>&1; then

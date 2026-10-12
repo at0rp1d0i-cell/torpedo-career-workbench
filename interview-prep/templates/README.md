@@ -108,6 +108,8 @@ node scripts/calendar.mjs delete --calendar 工作 --uid EVENT_UID --confirm
 
 `schedule` 的 `--alarms` 是逗号分隔的负秒数，必须能整除 60；默认 `-86400,-1800`，即提前 1 天和提前 30 分钟。Calendar.app 的 AppleScript 接口使用分钟，脚本负责换算。`managed` 会调用 Calendar.app 幂等 upsert；`mirror-only` 只写入 `private-notes/calendar/<slug>-*.json`。两种模式均默认 dry-run，只有 `--confirm` 才修改主档和私密输入。
 
+**旧提醒兼容边界**：upsert 检测到历史版本把秒值误写成分钟的提醒时，会在修改事件前失败，要求先在 Calendar.app 中核对并清理旧提醒。脚本不会自动删除或重建整个事件，避免丢失参与人、重复规则或其他未输入字段；正常事件仍原地幂等更新。
+
 **日历后端**：managed 模式通过 Calendar.app 写入指定日历。账户同步行为取决于用户配置，不附私人账户或日历标识。
 
 **UID 不是稳定标识**：日历迁移可能改变 UID。修改通过稳定 eventId 匹配，精确删除前现场回读日历与 UID。

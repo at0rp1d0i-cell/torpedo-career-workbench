@@ -52,6 +52,8 @@ node scripts/workbench.mjs schedule --slug my-company-infra --stage r1 --start 2
 
 最后一条只预览。核对后追加 `--confirm` 才写入私密日历输入与主档；`--mode managed --confirm` 才操作 Calendar.app。新建机会后人工填写主档、完成 G1 证据并维护面试索引，再运行审计。
 
+Calendar.app 的 upsert 在检测到历史版本误按分钟写入的旧提醒时，会在修改前失败，请先在 Calendar.app 中核对并清理旧提醒。脚本不会隐式删除、重建整个事件；正常事件按稳定 eventId 原地更新。
+
 ## 简历
 
 先填写 [素材总账](INVENTORY.md)，再修改 `resume/resume.html` 的身份字段和 `resume/resume-content.html` 的正文。

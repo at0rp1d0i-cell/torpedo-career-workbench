@@ -5,6 +5,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
+import { validateEvent, createOrUpdateAppleScript, inspectLegacyAlarmsJxaSource } from './calendar.mjs';
 import { buildDashboardPayload } from './dashboard.mjs';
 import { deriveInterviewPipeline, validateInterviewProcess } from './interview-process.mjs';
 import { validateContextCatalog, validateRepositoryLinks, auditRepositoryConsistency, auditOpportunity } from './workbench-data.mjs';
@@ -145,6 +147,48 @@ test('calendar 合同拒绝无时区时间和重复提醒，默认只预览', as
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test('Calendar 错误消息将不可信名称保留为单个字符串而非 AppleScript 表达式', () => {
+  const calendar = 'absent" & (do shell script "true") & "\\tail\nline';
+  const event = validateEvent({ version: 1, eventId: 'test-escaped-calendar', calendar, title: '测试', start: '2026-10-12T10:00:00+08:00' });
+  const source = createOrUpdateAppleScript(event, 'create');
+  const expression = source.split('\n').find(line => line.includes('then error ')).split('then error ')[1];
+  assert.match(expression, /^"(?:[^"\\]|\\.)*"$/);
+  assert.equal(JSON.parse(expression), `找不到日历: ${calendar}`.replaceAll('\n', '\r'));
+});
+
+test('Calendar 旧提醒检查拒绝隐式重建，保留完整事件；合法分钟碰撞不误判', () => {
+  const event = validateEvent({ version: 1, eventId: 'test-legacy-alarm', calendar: '测试日历', title: '测试', start: '2026-10-12T10:00:00+08:00', alarms: [-1800, -60] });
+  let deletes = 0;
+  const existing = {
+    description: () => '[resume-workbench-event-id:test-legacy-alarm]',
+    displayAlarms: () => [{ triggerInterval: () => -1800 }],
+    delete: () => { deletes += 1; },
+    recurrence: 'weekly', attendees: ['demo'], url: 'example'
+  };
+  const Application = () => ({ calendars: () => [{ name: () => '测试日历', events: () => [existing] }] });
+  const source = inspectLegacyAlarmsJxaSource(event);
+  assert.throws(() => runInNewContext(source, { Application }), /拒绝自动重建/);
+  assert.equal(deletes, 0);
+  assert.equal(existing.recurrence, 'weekly');
+  assert.deepEqual(existing.attendees, ['demo']);
+  existing.displayAlarms = () => [{ triggerInterval: () => -60 }, { triggerInterval: () => -1 }];
+  const collisionEvent = validateEvent({ ...event, alarms: [-60, -3600] });
+  const result = JSON.parse(runInNewContext(inspectLegacyAlarmsJxaSource(collisionEvent), { Application }));
+  assert.equal(result.action, 'none');
+  assert.equal(deletes, 0);
+});
+
+test('PDF Chrome 包装器在空 timeout 时兼容 Bash nounset', async () => {
+  const source = await readFile(join(ROOT, 'resume/build.sh'), 'utf8');
+  const wrapper = source.match(/^run_chrome\(\) \{[\s\S]*?^\}/m)?.[0];
+  assert.ok(wrapper, '构建必须通过可检测的 Chrome 包装器调用');
+  const bash = process.platform === 'darwin' ? '/bin/bash' : 'bash';
+  const direct = await execFileAsync(bash, ['-uc', `CHROME_TIMEOUT=""; CHROME=/usr/bin/printf; CHROME_FLAGS=("%s"); ${wrapper}\nrun_chrome verified`]);
+  assert.equal(direct.stdout, 'verified');
+  const timed = await execFileAsync(bash, ['-uc', `timeout_stub() { [ "$1" = 25s ] || return 9; shift; "$@"; }; CHROME_TIMEOUT=timeout_stub; CHROME=/usr/bin/printf; CHROME_FLAGS=("%s"); ${wrapper}\nrun_chrome verified`]);
+  assert.equal(timed.stdout, 'verified');
 });
 test('workbench schedule 支持预览、可选提醒和 mirror-only 原子写入', async () => {
   const slug = `test-schedule-${process.pid}`;
