@@ -106,6 +106,10 @@ G1 判断的是“是否值得投入面试、岗位可能是什么”；不是 O
 
 记录结果、已知原因、未知原因和可复用反馈。单次结果不能直接改写职业方向；重复信号才回流 `career-thinking/`。
 
+### 周期收尾
+
+一个招聘周期告一段落时，先运行 `node scripts/workbench.mjs retro --cycle YYYY-autumn` 查看收尾清单（未关闭机会、待反馈复盘、缺 `offer-decision.md` 的 Offer、已关闭机会的未来日程），逐项用受控命令处理或写明保留理由；清单处理完再用 `new-retro --cycle` 生成 `career-thinking/retros/<cycle>.md`。周期复盘只沉淀至少两个机会出现的信号，回流位置仍是 `career-thinking/` 的对应文件。
+
 ## 4. 公司 / 岗位尽调协作协议
 
 主代理先做实体消歧和问题定义，再按证据面并行派发子代理。根据问题规模选择 2–5 个模块，不固定启动全部模块：
@@ -147,9 +151,10 @@ G1 判断的是“是否值得投入面试、岗位可能是什么”；不是 O
 - `status` 只允许受控词表：已投 / 自动测评 / 笔试待进行 / 面试邀约 / 面试中 / Offer / 感谢信 / 未通过 / 流程终止 / 无回复关闭 / 搁置 / 放弃 / 主动终止 / HC 取消；细节（如“HC 取消”“候选人主动终止”）写入正文，不另造状态值。
 - `debrief.md` 字段：`session-id` / `opportunity` / `stage` / `date` / `result`；`opportunity` 必须对应已建档机会目录；`result` 只允许：通过 / 未通过 / 进入下一轮 / 待反馈 / 流程终止 / 未知。`stage` 与结构化日程使用面试流程稳定 ID；历史旧 stage 可兼容读取，但新记录使用流程 ID。
 - 面试定档：优先使用 `node scripts/workbench.mjs schedule --slug SLUG --start ISO --stage STAGE --mode managed|mirror-only [--alarms "-86400,-1800"] [--confirm]`；一次更新 G2 frontmatter 与结构化日历输入。已有日程改期使用 `reschedule --slug SLUG --start ISO --stage STAGE|--event-id ID`，只更新唯一已有事件，不静默创建；默认 dry-run / mirror-only，`managed --confirm` 才更新 Calendar.app。
-- `set-process` 用于把 HR 预计流程和机会类型写入主档；`dashboard` 只读聚合预计流程、实际轮次、日程、复盘和审计结果，不修改事实。
+- `set-process` 用于把 HR 预计流程和机会类型写入主档；未给 `--round` 时保留已有流程，只有显式 `--clear-rounds` 才清空；`dashboard` 只读聚合预计流程、实际轮次、日程、复盘和审计结果，不修改事实。
 - `set-gate` / `set-status` 只处理没有日程写入的人工状态修正；命令自动刷新 `updated-at`。`list` / `gate` / `audit` / `queue` 可读取带时区的私密日历输入推导时间状态，但不自动修改人工字段；`audit --strict` 只报告缺陷并以非零退出。`audit` 另输出「仓库一致性」段，覆盖手维护材料与主档状态的一致性——`interview-prep/README.md` 的岗位机会表 / 复盘索引 vs 实际目录、`quick-brief.md` 头部「当前 Gate」vs 主档 `gate`、旧模板主档缺 `opportunity-type` / `recruiting-cycle`；这些检查只报告，不自动修改任何文件。
 - `audit` 的「面试材料 / 复盘」类检查（`missing-quick-brief`、`missing-question-script`、`missing-debrief`、`missing-closed-debrief`）只在机会确实存在**非笔试（`kind: assessment`）轮次**的活动（结构化日程或已建复盘）时触发。只排了笔试、尚未进入任何面试的机会——G2 常因笔试定档被 `schedule` 自动推进——不触发这些检查；`interview-process` 未配置时无法判定轮次类型，按「存在活动即要求」保守处理，避免漏报真实面试。笔试阶段的时间状态仍由 `next-action` 与 `queue` 表达，不靠审查告警。
+- `retro` 只读聚合周期结果、轮次通过情况与收尾清单，不修改任何文件；`new-retro` 只生成带当时快照的复盘草稿，默认拒绝覆盖。
 - `record-outcome` 仅按显式 `--gate` / `--status` / `--next-action` 和 `--result` 更新；可用 `--stage` 将结果绑定到具体轮次；复盘结果必须指定唯一待反馈复盘或显式文件名，不自动把“通过”升级为下一轮。
 - 脚手架的 company / role 缺省时从对应 `record.md` frontmatter 读取；显式参数可覆盖生成文档标题，但不改变主档事实。
 - 任何 Agent 修改机会或复盘文档后必须通过 `node scripts/workbench.mjs validate`；字段漂移、`context/index.json` 声明路径与文档间相对链接（`private-notes/` 等冻结归档除外）由校验器拒绝，不依赖措辞约定。
@@ -185,6 +190,8 @@ node --check scripts/workbench-data.mjs
 node --check scripts/interview-process.mjs
 node --check scripts/dashboard.mjs
 node --check scripts/calendar.mjs
+node --check scripts/jd-intake.mjs
+node --check scripts/retro.mjs
 node --test scripts/workbench.test.mjs
 node scripts/workbench.mjs validate
 ```
@@ -197,3 +204,4 @@ Calendar 行为修改需要实际验证 dry-run、写入、重复 upsert、回�
 - `interview-prep/templates/README.md`：模板注册表、脚本入口和字段边界。
 - `interview-prep/templates/research-brief.md`：单个子代理的证据面任务单和输出合同。
 - `career-thinking/README.md`：职业方向长期判断材料的维护规则。
+- `career-thinking/retros/README.md`：周期复盘的生成方式与边界。

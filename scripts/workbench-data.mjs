@@ -18,7 +18,7 @@ export const CONTEXT_SCOPES = new Set(['opportunity', 'career', 'profile', 'all'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const G1_PLACEHOLDER_VALUES = new Set(['法律主体、品牌、母子公司、招聘主体是否一致。', '成立时间、团队/组织来源、产品成熟度和公开规模信号。', '卖什么、服务谁、处于原型/量产/交付哪个阶段。', '论文、专利、开源代码、开发文档、benchmark、监管披露或真实产品。', '融资、收入、客户、订单、runway（生存周期）和经营风险。', '与技术路线、商业化或直属培养有关的履历。', '实际工作对象、交付链路、技术栈、岗位上限/下限和个人匹配。', '主体矛盾、业务不确定性、招聘异常、诉讼/处罚、裁员/欠薪或来源冲突。', '当前是否值得投入，以及需要通过面试验证的关键假设。', '本场必须准备的项目、知识缺口和反向提问。']);
 
-function defaultDate() {
+export function defaultDate() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }

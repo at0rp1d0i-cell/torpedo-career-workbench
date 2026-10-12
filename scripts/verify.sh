@@ -11,7 +11,9 @@ for f in \
   scripts/workbench-data.mjs \
   scripts/interview-process.mjs \
   scripts/dashboard.mjs \
-  scripts/calendar.mjs
+  scripts/calendar.mjs \
+  scripts/jd-intake.mjs \
+  scripts/retro.mjs
 do
   node --check "$f" || fail=1
 done

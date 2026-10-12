@@ -37,7 +37,8 @@
         "career-thinking/preference-signals.md",
         "career-thinking/role-reality-notes.md",
         "career-thinking/decision-log.md",
-        "career-thinking/project-probes.md"
+        "career-thinking/project-probes.md",
+        "career-thinking/retros/<cycle>.md"
       ],
       "required": [
         {
@@ -71,6 +72,11 @@
           "path": "career-thinking/project-probes.md",
           "section": "对应 Probe 的 ## 目的 / 推荐形态 / 观察问题 / 完成标准",
           "reason": "需要把评价转化为项目验证或下一步行动时读取"
+        },
+        {
+          "path": "career-thinking/retros/<cycle>.md",
+          "section": "## 3. 重复信号；## 4. 能力缺口与素材补强；## 6. 判断修订",
+          "reason": "需要回顾上一招聘周期的跨机会信号或比较不同周期时读取"
         }
       ],
       "forbiddenByDefault": [

@@ -845,3 +845,89 @@ test('workbench reschedule 只更新已有日程并迁移待反馈复盘', async
     await rm(newDebrief, { force: true });
   }
 });
+test('workbench new-debrief 未给 --date 时从已结束日程推导日期', async () => {
+  const slug = `test-debrief-date-${process.pid}`;
+  const calendarFile = join(ROOT, 'private-notes', 'calendar', `${slug}-r1.json`);
+  const debriefFile = join(ROOT, 'interview-prep', 'debriefs', `2026-01-05-${slug}-r1.md`);
+  try {
+    await run(WORKBENCH, ['new-opportunity', '--slug', slug, '--company', '推导测试公司', '--role', '测试岗位']);
+    await run(WORKBENCH, ['set-gate', '--slug', slug, '--gate', 'G2']);
+    // UTC 前一日 23:30 对应北京时间 1 月 5 日 07:30，确认日期按 Asia/Shanghai 推导。
+    await writeFile(calendarFile, JSON.stringify({ version: 1, eventId: `${slug}-r1`, stage: 'r1', start: '2026-01-04T23:30:00Z', durationMinutes: 60 }));
+    const result = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1']);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(await readFile(debriefFile, 'utf8'), /^date: 2026-01-05$/m);
+  } finally {
+    await rm(join(ROOT, 'interview-prep', 'opportunities', slug), { recursive: true, force: true });
+    await rm(calendarFile, { force: true });
+    await rm(debriefFile, { force: true });
+  }
+});
+
+test('workbench context 拒绝越界 slug', async () => {
+  const result = await run(WORKBENCH, ['context', '--slug', '../../INVENTORY']);
+  assert.notEqual(result.code, 0);
+  assert.match(result.stderr, /slug 无效/);
+});
+
+test('workbench set-process 未给 --round 时保留已有流程，--clear-rounds 才清空', async () => {
+  const slug = `test-keep-process-${process.pid}`;
+  const recordPath = join(ROOT, 'interview-prep', 'opportunities', slug, 'record.md');
+  try {
+    await run(WORKBENCH, ['new-opportunity', '--slug', slug, '--company', '流程测试公司', '--role', '测试岗位']);
+    const initial = await run(WORKBENCH, ['set-process', '--slug', slug, '--type', 'internship', '--source', 'HR 口径', '--as-of', '2026-09-01', '--round', 'r1|technical|技术面', '--round', 'hr|hr|HR 面']);
+    assert.equal(initial.code, 0, initial.stderr);
+    const retyped = await run(WORKBENCH, ['set-process', '--slug', slug, '--type', 'campus', '--cycle', '2027-autumn']);
+    assert.equal(retyped.code, 0, retyped.stderr);
+    assert.match(retyped.stdout, /interview-process=r1 → hr/);
+    const kept = await readFile(recordPath, 'utf8');
+    assert.match(kept, /^opportunity-type: campus$/m);
+    assert.match(kept, /^interview-process: \[\{"id":"r1"/m);
+    const cleared = await run(WORKBENCH, ['set-process', '--slug', slug, '--clear-rounds']);
+    assert.equal(cleared.code, 0, cleared.stderr);
+    assert.match(await readFile(recordPath, 'utf8'), /^interview-process:$/m);
+  } finally {
+    await rm(join(ROOT, 'interview-prep', 'opportunities', slug), { recursive: true, force: true });
+  }
+});
+
+test('workbench retro 聚合周期结果并列出未收尾事项', async () => {
+  const cycle = '2031-spring';
+  const closedSlug = `test-retro-closed-${process.pid}`;
+  const openSlug = `test-retro-open-${process.pid}`;
+  const futureCalendar = join(ROOT, 'private-notes', 'calendar', `${closedSlug}-hr.json`);
+  const debriefFile = join(ROOT, 'interview-prep', 'debriefs', `2031-03-02-${closedSlug}-r1.md`);
+  const retroFile = join(ROOT, 'career-thinking', 'retros', `${cycle}.md`);
+  try {
+    for (const slug of [closedSlug, openSlug]) {
+      await run(WORKBENCH, ['new-opportunity', '--slug', slug, '--company', '复盘测试公司', '--role', slug, '--type', 'internship', '--cycle', cycle]);
+      await run(WORKBENCH, ['set-process', '--slug', slug, '--source', 'HR 口径', '--as-of', '2031-03-01', '--round', 'r1|technical|技术面', '--round', 'hr|hr|HR 面']);
+    }
+    await run(WORKBENCH, ['new-debrief', '--slug', closedSlug, '--date', '2031-03-02', '--stage', 'r1']);
+    await run(WORKBENCH, ['record-outcome', '--slug', closedSlug, '--result', '未通过', '--gate', 'G4', '--status', '未通过']);
+    await writeFile(futureCalendar, JSON.stringify({ version: 1, eventId: `${closedSlug}-hr`, stage: 'hr', start: '2031-04-01T10:00:00+08:00', durationMinutes: 30 }));
+    const result = await run(WORKBENCH, ['retro', '--cycle', cycle, '--at', '2031-03-20T12:00:00+08:00', '--json']);
+    assert.equal(result.code, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.summary.total, 2);
+    assert.equal(payload.summary.closed, 1);
+    assert.equal(payload.summary.open, 1);
+    assert.deepEqual(payload.rounds.map(round => [round.kind, round.total, round.failed]), [['technical', 1, 1]]);
+    const closed = payload.opportunities.find(item => item.slug === closedSlug);
+    assert.equal(closed.failedAt, '技术面');
+    const codes = payload.looseEnds.map(end => `${end.slug}:${end.code}`).sort();
+    assert.deepEqual(codes, [`${closedSlug}:future-calendar-input`, `${openSlug}:open-opportunity`].sort());
+    const created = await run(WORKBENCH, ['new-retro', '--cycle', cycle, '--date', '2031-03-20']);
+    assert.equal(created.code, 0, created.stderr);
+    const retro = await readFile(retroFile, 'utf8');
+    assert.match(retro, /^# 2031-spring · 求职周期复盘/m);
+    assert.match(retro, /\| 技术面 \| 1 \| 0 \| 1 \| 0 \|/);
+    const invalid = await run(WORKBENCH, ['retro', '--cycle', '2031-winter']);
+    assert.notEqual(invalid.code, 0);
+  } finally {
+    for (const slug of [closedSlug, openSlug]) await rm(join(ROOT, 'interview-prep', 'opportunities', slug), { recursive: true, force: true });
+    await rm(futureCalendar, { force: true });
+    await rm(debriefFile, { force: true });
+    await rm(retroFile, { force: true });
+  }
+});
