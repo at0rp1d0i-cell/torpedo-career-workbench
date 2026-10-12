@@ -18,6 +18,7 @@
 | 建立日历事件 | 日期、时间、形式已确认 | [`calendar-event.json`](calendar-event.json) | 本地私密输入 + Calendar.app | 默认 dry-run；写入需 `--confirm`；敏感信息不入库 |
 | 面试后复盘 | 一场面试结束 | [`debrief.md`](debrief.md) | `interview-prep/debriefs/<date>-<slug>-<stage>.md` | 观察、回忆、推断、补答和影响决策分开 |
 | 公司 / 岗位尽调 | G1 收到邀约立即启动；G3（全部技术面通过、进入 HR 谈薪 / Offer 决策）时追加雇佣核验 | [`due-diligence.md`](due-diligence.md) | 岗位目录下尽调文件 | G1 建立公司与 JD 岗位模型；G3 只追加合同、薪资、headcount、转正和稳定性证据 |
+| 周期复盘 | 一个招聘周期结束、收尾清单已处理 | [`cycle-retro.md`](cycle-retro.md) + `new-retro --cycle` | `career-thinking/retros/<cycle>.md` | 快照是只读投影；只沉淀跨机会重复信号，不改写单个机会事实 |
 | 子代理研究简报 | G1 尽调需要分模块并行收集时 | [`research-brief.md`](research-brief.md) | 每个证据面一份研究简报 → 主代理整合 | 只产出简报、来源、判断准则、冲突/缺口；不修改主档、不做总判断 |
 
 ## 使用顺序
@@ -40,6 +41,8 @@
 node scripts/workbench.mjs validate
 node scripts/workbench.mjs set-process --slug SLUG --type campus|internship|experienced --source SOURCE --as-of YYYY-MM-DD [--cycle YYYY-autumn|YYYY-spring] [--round ID|KIND|LABEL[|optional]] ...
 node scripts/workbench.mjs dashboard [--at ISO] [--window-days N] [--json] [--html] [--output PATH]
+node scripts/workbench.mjs retro [--cycle YYYY-autumn|YYYY-spring] [--type campus|internship|experienced] [--json]
+node scripts/workbench.mjs new-retro --cycle YYYY-autumn|YYYY-spring [--date YYYY-MM-DD]
 ```
 
 - 轮次绑定：实际轮次由结构化日程的 `stage` 和复盘 frontmatter 的 `stage` 关联；历史未结构化阶段按轮次顺序兼容推导，Dashboard 会标明推导边界。

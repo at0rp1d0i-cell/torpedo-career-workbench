@@ -16,6 +16,7 @@ Torpedo Career Workbench 是我在实际求职过程中使用并持续维护的�
 - 从真实人工邀约开始建立公司 × 岗位主档，管理 G1–G4 流程。
 - 为每场面试保留独立复盘；全部技术面通过后再进入 HR / Offer 核验。
 - CLI 输出状态、待办、审计、上下文读取清单和只读 Dashboard。
+- 周期结束时输出结果分布与收尾清单，生成只沉淀跨机会信号的周期复盘。
 - 固定双页 HTML 简历与 PDF 构建；macOS Calendar.app 日程辅助。
 
 这是个人工作台，不提供自动投递或招聘表单最终提交。无需云端账户、数据库或第三方 Node.js 依赖。
@@ -51,6 +52,15 @@ node scripts/workbench.mjs schedule --slug my-company-infra --stage r1 --start 2
 ```
 
 最后一条只预览。核对后追加 `--confirm` 才写入私密日历输入与主档；`--mode managed --confirm` 才操作 Calendar.app。新建机会后人工填写主档、完成 G1 证据并维护面试索引，再运行审计。
+
+求职告一段落时：
+
+```bash
+node scripts/workbench.mjs retro --cycle 2026-autumn
+node scripts/workbench.mjs new-retro --cycle 2026-autumn
+```
+
+`retro` 列出未关闭机会、待反馈复盘、缺决策记录的 Offer 和已关闭机会的未来日程，并给出对应命令；处理完后 `new-retro` 生成 `career-thinking/retros/` 下的复盘草稿。
 
 Calendar.app 的 upsert 在检测到历史版本误按分钟写入的旧提醒时，会在修改前失败，请先在 Calendar.app 中核对并清理旧提醒。脚本不会隐式删除、重建整个事件；正常事件按稳定 eventId 原地更新。
 
