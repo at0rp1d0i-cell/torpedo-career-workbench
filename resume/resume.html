@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>示例候选人 · 虚构简历</title>
+<meta name="author" content="示例候选人">
+<meta name="description" content="Torpedo Career Workbench 虚构双页简历示例">
+<link rel="stylesheet" href="styles/kami.css">
+</head>
+<body>
+<div class="resume-document">
+
+  <!-- ══ Page 1 · stable frame ══ -->
+  <section class="sheet sheet-first">
+    <header class="resume-header">
+      <div class="name">示例候选人</div>
+      <div class="headline">基础设施工程 · 虚构示例</div>
+      <div class="strip">证据驱动的个人素材与简历管理</div>
+      <div class="contact"><a href="mailto:candidate@example.com">candidate@example.com</a> · 占位地址</div>
+    </header>
+    <img class="portrait" src="assets/my_photo.jpg" alt="自行提供的候选人照片">
+    <main class="sheet-body">{{PAGE_1}}</main>
+    <footer class="sheet-footer"><span>示例候选人 · 虚构示例</span><span>1 / 2</span></footer>
+  </section>
+
+  <!-- ══ Page 2 · stable continuation frame ══ -->
+  <section class="sheet sheet-continuation">
+    <header class="continuation-header"><span>示例候选人 · 基础设施工程</span><span>证据与表述边界</span></header>
+    <main class="sheet-body">{{PAGE_2}}</main>
+    <footer class="sheet-footer"><span>示例候选人 · 虚构示例</span><span>2 / 2</span></footer>
+  </section>
+
+</div>
+<script>
+  window.addEventListener('load', function () {
+    var overflow = Array.prototype.some.call(document.querySelectorAll('.sheet'), function (sheet) {
+      var body = sheet.querySelector('.sheet-body');
+      return body.scrollHeight > body.clientHeight + 1;
+    });
+    document.documentElement.setAttribute('data-layout-fit', overflow ? 'overflow' : 'ok');
+  });
+</script>
+</body>
+</html>

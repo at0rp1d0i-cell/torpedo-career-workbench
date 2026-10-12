@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "eventId": "company-role-stage",
+  "stage": "r1",
+  "purpose": "interview",
+  "calendar": "工作",
+  "title": "公司｜岗位｜面试",
+  "start": "2026-09-02T18:00:00+08:00",
+  "durationMinutes": 60,
+  "location": "视频面试",
+  "description": "结束时间未提供，按 60 分钟预留。\n会议链接：\n会议 ID：\n联系人：\n电话：\n邮箱：",
+  "alarms": [-86400, -1800]
+}

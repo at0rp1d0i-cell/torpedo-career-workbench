@@ -1,0 +1,12 @@
+# 私密输入、生成物与本地验证
+/private-notes/
+/resume/dist/
+/resume/assets/my_photo.jpg
+/releases/
+/tmp/
+/output/
+/node_modules/
+.DS_Store
+*.swp
+*.tmp
+*.tmp.html

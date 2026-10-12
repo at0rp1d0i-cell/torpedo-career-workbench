@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "purpose": "只保存上下文路由、读取优先级和事实所有权；不复制任何事实内容。",
+  "scopes": {
+    "opportunity": {
+      "label": "与机会有关的内容",
+      "activation": "用户提到具体公司、岗位、面试、Offer 或某个机会",
+      "canonicalOwners": [
+        "interview-prep/opportunities/<slug>/record.md",
+        "interview-prep/opportunities/<slug>/due-diligence.md",
+        "interview-prep/debriefs/<date>-<slug>-<stage>.md"
+      ],
+      "requiredPolicy": [
+        "record.md：始终必读；身份、Gate、状态、岗位模型和事实边界",
+        "due-diligence.md：存在时必读；已整合的 G1 公司 / JD 证据和来源边界",
+        "关联 debrief：存在时必读；已发生面试的现场证据",
+        "offer-decision.md：已进入 Offer 或文件存在时必读；雇佣核验和决策边界"
+      ],
+      "onDemandPolicy": [
+        "quick-brief.md：仅在面试前恢复执行要点时读取",
+        "question-script.md：仅在准备反问或后续追问时读取",
+        "research-*.md：仅在核验研究来源、冲突或缺口时读取",
+        "其他机会补充文件：当前问题涉及其主题时读取"
+      ],
+      "forbiddenByDefault": [
+        "已有 G1 证据时不得重复外部背调",
+        "不得把 quick-brief 或研究简报当作主档事实源",
+        "不得用外部搜索填补本地材料未记录的个人经历"
+      ]
+    },
+    "career": {
+      "label": "个人对岗位与职业方向的整体评价",
+      "activation": "用户询问岗位是否值得、工作内容偏好、职业方向、机会比较或长期选择",
+      "canonicalOwners": [
+        "career-thinking/README.md",
+        "career-thinking/options.md",
+        "career-thinking/preference-signals.md",
+        "career-thinking/role-reality-notes.md",
+        "career-thinking/decision-log.md",
+        "career-thinking/project-probes.md"
+      ],
+      "required": [
+        {
+          "path": "career-thinking/README.md",
+          "section": "## 当前结论；## 使用方式与管理边界",
+          "reason": "恢复当前已经确定的职业主线与判断边界"
+        },
+        {
+          "path": "career-thinking/options.md",
+          "section": "## 已确定的方向层级；## 推理 Infra 内部岗位簇；## 投递优先级",
+          "reason": "判断岗位与当前方向、优先级和降级条件的关系"
+        },
+        {
+          "path": "career-thinking/preference-signals.md",
+          "section": "## 已知信号；## Kernel / 算子方向信号；## Inference Engine / Runtime 方向信号；## Inference Serving / Platform 方向信号；## 算法层兴趣信号",
+          "reason": "判断个人偏好，不把岗位名称等同于真实工作体验"
+        },
+        {
+          "path": "career-thinking/role-reality-notes.md",
+          "section": "与当前问题对应的 ## <岗位簇>（真实工作可能包括 / 成就感来源 / 主要痛苦）",
+          "reason": "把岗位评价落到日常工作质感，而非关键词匹配"
+        }
+      ],
+      "onDemand": [
+        {
+          "path": "career-thinking/decision-log.md",
+          "section": "相关日期的 ## YYYY-MM-DD 下的 Context / Decision / Evidence / Revised Belief",
+          "reason": "需要追溯判断为什么变化时读取"
+        },
+        {
+          "path": "career-thinking/project-probes.md",
+          "section": "对应 Probe 的 ## 目的 / 推荐形态 / 观察问题 / 完成标准",
+          "reason": "需要把评价转化为项目验证或下一步行动时读取"
+        }
+      ],
+      "forbiddenByDefault": [
+        "单次拒绝、无回复或面试结果不得直接改写职业主线",
+        "不得把 career-thinking 的假设写成个人已完成经历",
+        "不得用岗位宣传替代真实工作内容验证"
+      ]
+    },
+    "profile": {
+      "label": "个人基本信息、经历与能力边界",
+      "activation": "用户询问个人背景、简历、项目匹配、技能、教育、表述或网申资料",
+      "canonicalOwners": [
+        "INVENTORY.md",
+        "INTAKE.md",
+        "resume/templates/resume-version.md",
+        "sources/"
+      ],
+      "required": [
+        {
+          "path": "INVENTORY.md",
+          "section": "## 2. 教育；## 5. 技能；## 8. 定位结论",
+          "reason": "恢复教育、技能、主投方向和当前诚实基线"
+        }
+      ],
+      "onDemand": [
+        {
+          "path": "INVENTORY.md",
+          "section": "## 1. 个人信息",
+          "reason": "仅在用户明确需要姓名、联系方式或表单字段时读取；普通讨论不主动加载 PII"
+        },
+        {
+          "path": "INVENTORY.md",
+          "section": "## 3. 核心项目；## 4. 奖项竞赛",
+          "reason": "岗位匹配、项目回答、简历投影或经历核验时读取"
+        },
+        {
+          "path": "INVENTORY.md",
+          "section": "## 6. 待补充 / Gap；## 7. 待补证明材料清单",
+          "reason": "判断能力缺口、证据强度和不可声称边界时读取"
+        },
+        {
+          "path": "INTAKE.md",
+          "section": "## 2. 分类；## 4. 两道准入门；## 6. 状态标签定义",
+          "reason": "新增素材、核验素材或决定能否进入简历时读取"
+        },
+        {
+          "path": "sources/",
+          "section": "与当前经历直接相关的原始证据文件",
+          "reason": "需要核对具体项目、奖项或数字时按条目读取，不扫描整个目录"
+        },
+        {
+          "path": "resume/templates/resume-version.md",
+          "section": "## Metadata；## 选用事实；## 构建与核验；## 投递留痕",
+          "reason": "需要记录或核对简历版本的投影、构建产物和投递留痕时读取"
+        }
+      ],
+      "forbiddenByDefault": [
+        "简历不能创造 INVENTORY 没有的经历",
+        "未核实、待补证或候选条目不得写成已完成事实",
+        "普通机会讨论不主动读取电话、邮箱等个人联系方式"
+      ]
+    }
+  }
+}

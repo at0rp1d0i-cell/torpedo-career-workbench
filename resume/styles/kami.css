@@ -1,0 +1,156 @@
+/* ============================================================
+   简历样式 · 正式版（打印优先 / A4 / macOS 系统字体可复现）
+   白底、黑灰正文、低饱和藏蓝强调。改色只动 :root 变量。
+   ============================================================ */
+:root{
+  --paper:#ffffff;
+  --screen-bg:#f3f4f6;
+  --ink:#16325c;
+  --text:#111827;
+  --muted:#4b5563;
+  --rule:#d1d5db;
+  --serif-cn:"Songti SC","STSong","Source Han Serif SC","Noto Serif CJK SC",serif;
+  --serif-en:"Charter","Georgia","Times New Roman",serif;
+  /* 混排栈：拉丁/数字走 Charter，中文回落宋体。 */
+  --serif:"Charter","Songti SC","STSong","Source Han Serif SC","Noto Serif CJK SC",serif;
+  --mono:"SF Mono",ui-monospace,Menlo,monospace;
+}
+
+@page{ size:A4; margin:0; }
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--serif);
+  color:var(--text);
+  background:var(--paper);
+  font-size:11pt;
+  line-height:1.43;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+/* ---------- 固定双页框架 ---------- */
+.resume-document{ width:210mm; margin:0 auto; }
+.sheet{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  width:210mm;
+  height:297mm;
+  padding:12mm 15mm 9mm;
+  background:var(--paper);
+  break-after:page;
+  overflow:hidden;
+}
+.sheet:last-child{ break-after:auto; }
+.sheet-body{ flex:1 1 auto; min-height:0; overflow:hidden; }
+.sheet-footer{
+  display:flex;
+  justify-content:space-between;
+  flex:0 0 auto;
+  margin-top:2mm;
+  padding-top:1.1mm;
+  border-top:1px solid var(--rule);
+  color:var(--muted);
+  font-size:8.8pt;
+}
+@media screen{
+  body{ background:var(--screen-bg); }
+  .resume-document{ margin:24px auto; }
+  .sheet{ margin-bottom:24px; box-shadow:0 2px 18px rgba(17,24,39,.12); }
+}
+
+/* ---------- 头部 ---------- */
+.resume-header{ flex:0 0 auto; margin-bottom:3mm; }
+.continuation-header{
+  display:flex;
+  justify-content:space-between;
+  flex:0 0 auto;
+  margin-bottom:2.6mm;
+  padding-bottom:1mm;
+  border-bottom:1.4px solid var(--ink);
+  color:var(--ink);
+  font-size:9.2pt;
+  font-weight:600;
+}
+.name{ font-size:20.5pt; font-weight:600; letter-spacing:.02em; margin:0 0 1.1mm; }
+.headline{ color:var(--ink); font-size:10pt; font-weight:600; letter-spacing:.02em; margin-bottom:.9mm; }
+/* 亮点条：头部第一屏的三个最强事实信号 */
+.strip{ font-size:9.2pt; color:var(--text); margin-bottom:1.2mm; }
+.strip .dot{ color:var(--ink); margin:0 .45em; }
+.contact{ color:var(--muted); font-size:9pt; }
+.contact a{ color:var(--ink); text-decoration:none; }
+.contact a:hover,
+.entry-sub a:hover{ text-decoration:underline; }
+.contact .sep{ color:var(--rule); margin:0 .55em; }
+
+/* 照片版：只占用第一页页首右侧。 */
+.portrait{ display:none; }
+body.with-photo .sheet-first{ position:relative; }
+body.with-photo .sheet-first .resume-header{ padding-right:28mm; min-height:30mm; }
+body.with-photo .sheet-first .portrait{
+  display:block;
+  position:absolute;
+  top:12mm;
+  right:15mm;
+  width:22.5mm;
+  height:30mm;
+  object-fit:cover;
+  object-position:center top;
+  border:1px solid var(--rule);
+}
+
+/* ---------- 区块 ---------- */
+.section{ margin-top:3mm; }
+.sheet-body > .section:first-child{ margin-top:0; }
+.experience-group.group-2:not(.group-continuation),
+.experience-group.group-3{
+  margin-top:4mm;
+  padding-top:3mm;
+  border-top:1px solid var(--rule);
+}
+.experience-group.group-continuation{ margin-top:0; }
+.experience-group.group-peephole{
+  margin-top:2mm;
+  padding-top:2mm;
+  border-top:1px solid var(--rule);
+}
+.experience-group.group-1 .entry,
+.experience-group.group-peephole .entry{ margin-bottom:0; }
+.section > h2{
+  font-size:12pt; font-weight:600; color:var(--ink);
+  letter-spacing:.08em;
+  margin:0 0 1.8mm; padding-bottom:.8mm;
+  border-bottom:1.4px solid var(--ink);
+}
+
+/* ---------- 条目 ---------- */
+.entry{ margin-bottom:2mm; break-inside:avoid; }
+.entry-head{ display:flex; justify-content:space-between; align-items:baseline; gap:3mm; margin-bottom:.8mm; }
+.entry-title{ font-size:11.5pt; font-weight:600; }
+.entry-title .role{ color:var(--muted); font-weight:400; }
+.entry-meta{ color:var(--muted); font-size:9pt; white-space:nowrap; }
+.entry-sub{ color:var(--text); font-size:10.5pt; margin:.6mm 0; }
+.education .entry-sub{ color:var(--muted); font-size:9.5pt; }
+.repo-link{ font-size:9.2pt; margin:0 0 1mm; }
+.repo-link a{ color:var(--ink); text-decoration:none; display:inline-flex; align-items:center; gap:.35em; }
+.repo-icon{ width:1em; height:1em; fill:currentColor; flex:none; }
+.entry-sub a{ color:var(--ink); text-decoration:none; }
+ul.bullets{ margin:1.2mm 0 0; padding-left:4.3mm; }
+ul.bullets li{ margin:1mm 0; }
+.mono{ font-family:var(--mono); font-size:.94em; }
+.metric{ white-space:nowrap; }
+/* 内联图标：随文字颜色与字号，仅用于联系方式与仓库链接 */
+.icn{ width:.95em; height:.95em; fill:currentColor; vertical-align:-.12em; margin-right:.32em; }
+.todo{ color:#a23; background:#f6e9e6; padding:0 .3em; border-radius:2px; }
+
+/* ---------- 键值 / 技能 ---------- */
+.kv{ display:grid; grid-template-columns:max-content 1fr; gap:.6mm 3mm; font-size:9.5pt; margin:1mm 0 0; }
+.kv dt{ color:var(--ink); font-weight:600; }
+.kv dd{ margin:0; }
+
+/* ---------- 奖项行 ---------- */
+.award{ display:flex; justify-content:space-between; gap:3mm; margin:.6mm 0; font-size:9.5pt; }
+.award .lvl{ color:var(--muted); font-size:8.9pt; white-space:nowrap; }
+.award-subtitle{ display:block; color:var(--muted); font-size:8.5pt; line-height:1.25; margin-top:.2mm; }
