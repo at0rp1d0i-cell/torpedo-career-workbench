@@ -8,6 +8,12 @@
 - `set-process` 未给 `--round` 时保留已有面试流程；新增 `--clear-rounds` 显式清空。
 - `verify.sh` 补充 `jd-intake.mjs` 与 `retro.mjs` 语法检查；去除 CLI 内重复的工具函数。
 
+## Unreleased
+
+- 增加 `new-debrief --quick`：简短现场记录、指定轮次日期推导、主档和 README 索引同步。
+- 增加 `record-outcome --sync`：显式结果 / 状态与索引、速览 Gate 一次回填，异常回滚。
+- 增加面试后轻量 Agent 路径，保留原深度复盘与旧命令兼容；Gate 不自动升级。
+
 ## 0.1.0
 
 - 初始开源模板：素材治理、简历、机会 Gate、面试复盘、上下文路由、CLI 和只读 Dashboard。
