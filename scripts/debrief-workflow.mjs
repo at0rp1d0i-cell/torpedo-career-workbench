@@ -58,14 +58,16 @@ export async function commitChanges(changes) {
 const label = value => String(value).replace(/[\r\n]/g, ' ').replace(/[\\[\]*|]/g, '\\$&');
 
 function addLink(text, heading, target, title) {
-  if (relativeLinkTargets(text).includes(target)) return text;
+  const exists = relativeLinkTargets(text).includes(target);
   const line = `- [${label(title)}](${target})`;
   const lines = text.split('\n');
   const start = lines.findIndex(value => value.trim() === heading);
-  if (start < 0) return `${text.trimEnd()}\n\n${heading}\n\n${line}\n`;
+  if (start < 0) return exists ? text : `${text.trimEnd()}\n\n${heading}\n\n${line}\n`;
   let end = start + 1;
   while (end < lines.length && !/^## /.test(lines[end])) end += 1;
-  lines.splice(end, 0, line, '');
+  const section = lines.slice(start + 1, end).filter(value => heading !== '## 复盘索引' || value.trim() !== '尚无实际面试；不要把准备稿写成已经发生的复盘。');
+  if (!exists) section.push(line, '');
+  lines.splice(start + 1, end - start - 1, ...section);
   return lines.join('\n');
 }
 
@@ -120,7 +122,7 @@ export async function quickDebrief({ slug, stage, date, notes, company, role, fo
   if (errors.length) throw new Error(errors.join('；'));
   const template = await fs.readFile(join(ROOT, 'interview-prep/templates/quick-debrief.md'), 'utf8');
   let content = template;
-  for (const [key, value] of Object.entries({ FRONTMATTER: serializeFrontmatter(data, DEBRIEF_FIELDS).trimEnd(), COMPANY: company, ROLE: role, DATE: date, STAGE: stage, RECORD_PATH: `../opportunities/${slug}/record.md`, NOTES: notes.trim() })) content = content.replaceAll(`{{${key}}}`, () => value);
+  for (const [key, value] of Object.entries({ FRONTMATTER: serializeFrontmatter(data, DEBRIEF_FIELDS).trimEnd(), COMPANY: company, ROLE: role, DATE: date, STAGE: stage, RECORD_PATH: `../opportunities/${slug}/record.md`, NOTES: notes })) content = content.replaceAll(`{{${key}}}`, () => value);
   const changes = new Map([[path, { before: null, after: content }]]);
   await indexChanges(slug, record, {}, name, changes);
   await commitChanges(changes);

@@ -974,6 +974,7 @@ test('快速记录只需现场证据，按本轮日程推导日期并补齐两�
     assert.doesNotMatch(content, /^## 正式补答/m);
     assert.match(await readFile(join(dir, 'record.md'), 'utf8'), new RegExp(`../../debriefs/2026-01-05-${slug}-r1.md`));
     assert.match(await readFile(readmePath, 'utf8'), new RegExp(`debriefs/2026-01-05-${slug}-r1.md`));
+    assert.doesNotMatch(await readFile(readmePath, 'utf8'), /尚无实际面试/);
     const before = await readFile(debrief, 'utf8');
     const duplicate = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--date', '2026-01-05', '--quick', '--notes', '覆盖', '--force']);
     assert.notEqual(duplicate.code, 0); assert.equal(await readFile(debrief, 'utf8'), before);
@@ -1017,6 +1018,11 @@ test('结果同步不自动升 Gate，拒绝提前 G3 与模糊轮次选择', as
     const premature = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r2', '--result', '进入下一轮', '--gate', 'G3', '--sync']); assert.notEqual(premature.code, 0);
     assert.equal(await readFile(join(dir, 'record.md'), 'utf8'), before);
     const completed = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r2', '--result', '通过', '--gate', 'G3', '--sync']); assert.equal(completed.code, 0, completed.stderr);
+    const extraName = `2026-01-06-${slug}-r1.md`; files.push(join(ROOT, 'interview-prep/debriefs', extraName));
+    assert.equal((await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--date', '2026-01-06', '--quick', '--notes', '  保留缩进的回忆\n    第二行'])).code, 0);
+    const ambiguousStage = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r1', '--result', '通过', '--sync']); assert.notEqual(ambiguousStage.code, 0);
+    const exact = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r1', '--debrief', extraName, '--result', '通过', '--sync']); assert.equal(exact.code, 0, exact.stderr);
+    assert.match(await readFile(join(ROOT, 'interview-prep/debriefs', extraName), 'utf8'), /  保留缩进的回忆/);
     assert.match(await readFile(join(dir, 'record.md'), 'utf8'), /^gate: G3$/m);
   });
 });

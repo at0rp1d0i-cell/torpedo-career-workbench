@@ -48,15 +48,15 @@
     "resume/templates/resume-version.md": "478c481ecbe37e1ee9e9ebd71daeb3e0290965c111d6f13aa63e3a822182e985",
     "scripts/calendar.mjs": "133bc831ba5d22e5b9d2c3b66878000c26cb9c1095ec3554765e318070a908a5",
     "scripts/dashboard.mjs": "acad4eea4f50b07327e73b6ade4880e7e1aba9647e0e98930c9c8c80faeaa869",
-    "scripts/debrief-workflow.mjs": "254fa6276dd75009e3b5597f9f1b16cb51970452f3e197d12a8de579e6af0ac2",
+    "scripts/debrief-workflow.mjs": "b23662130004dfc5bc1f47b45b07263395ff2f217910905607eb4fcefde9999c",
     "scripts/interview-process.mjs": "2f29ad7e21abb3ed8e5b6091e8bca74e00323c09449f55be577875acd3440918",
     "scripts/jd-intake.mjs": "b82370a2952b881b3e70f3280fd3720d37e27c5f524486c47407dbe64544ca95",
     "scripts/jd-keywords.json": "f7b69fd48c41d4746a2d1859d29bdea31c02d4b178f9b35c83882cfa6778f6c6",
     "scripts/retro.mjs": "9433a0fe70202404acea79c192e1ae7cc79a7c603699c013b84438aa98d816b7",
     "scripts/verify.sh": "d6100c594f298bd648447d54ee7222ce5d8efba2034c21ae1cc69a4b82b27db9",
     "scripts/workbench-data.mjs": "d191e22963e59d92b4e636bb27b4497c93eef8e3ed974e2436a4edcb6a966336",
-    "scripts/workbench.mjs": "1af8f2db4c302ff18293262c2c242ed3e743620af285207663bb4eaad82c2aa4",
-    "scripts/workbench.test.mjs": "7894ea8aac5a26cbe1da5fabacf89cd74e45a0e682d46c5584fe4d125452de1c",
+    "scripts/workbench.mjs": "dae28ae45f8a5f9ddab558388f265a0de7f387e0826f37c3faeefeb9b482c68a",
+    "scripts/workbench.test.mjs": "f4dc610b5eb4472ccbfa7f9dd7bcc5137753c7a0aaf89e2f30d0db00fa31573a",
     "sources/README.md": "468cf689444e761113eabf4094c00e80f8a9759453f98b96a353b255bb14cd77",
     "sources/demo-project.md": "4928d81b28f39b0e231bce316fea473bce6e6f0ce406429af28649e97b3ea056"
   }
