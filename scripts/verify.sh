@@ -13,7 +13,8 @@ for f in \
   scripts/dashboard.mjs \
   scripts/calendar.mjs \
   scripts/jd-intake.mjs \
-  scripts/retro.mjs
+  scripts/retro.mjs \
+  scripts/debrief-workflow.mjs
 do
   node --check "$f" || fail=1
 done

@@ -16,6 +16,7 @@
 | 面试前速览 | 已定档，需要快速恢复上下文 | [`quick-brief.md`](quick-brief.md) | 岗位目录下 `quick-brief.md` | 只压缩主档，不新增判断 |
 | 准备反向提问 | 面试前需要现场问题 | [`question-script.md`](question-script.md) | 岗位目录下 `question-script.md` | 技术面与 HR 面分层；不把猜测当事实 |
 | 建立日历事件 | 日期、时间、形式已确认 | [`calendar-event.json`](calendar-event.json) | 本地私密输入 + Calendar.app | 默认 dry-run；写入需 `--confirm`；敏感信息不入库 |
+| 快速现场记录 | 面试刚结束，只需先留最小证据 | [`quick-debrief.md`](quick-debrief.md) + `new-debrief --quick` | 同一 canonical debrief + 主档 / README 索引 | 只记现场或回忆，默认待反馈，深度核验按需补充 |
 | 面试后复盘 | 一场面试结束 | [`debrief.md`](debrief.md) | `interview-prep/debriefs/<date>-<slug>-<stage>.md` | 观察、回忆、推断、补答和影响决策分开 |
 | 公司 / 岗位尽调 | G1 收到邀约立即启动；G3（全部技术面通过、进入 HR 谈薪 / Offer 决策）时追加雇佣核验 | [`due-diligence.md`](due-diligence.md) | 岗位目录下尽调文件 | G1 建立公司与 JD 岗位模型；G3 只追加合同、薪资、headcount、转正和稳定性证据 |
 | 周期复盘 | 一个招聘周期结束、收尾清单已处理 | [`cycle-retro.md`](cycle-retro.md) + `new-retro --cycle` | `career-thinking/retros/<cycle>.md` | 快照是只读投影；只沉淀跨机会重复信号，不改写单个机会事实 |
@@ -131,3 +132,7 @@ node scripts/calendar.mjs delete --calendar 工作 --uid EVENT_UID --confirm
 ## 文档边界
 
 各工作台文档的边界定义（`record.md` / `due-diligence.md` / `debrief.md` / `quick-brief.md` / `question-script.md` / `offer-decision.md`）见 [`../../AGENTS.md`](../../AGENTS.md) §6「文档边界」，本节不再逐条重述。本目录额外纪律只有一条：`offer-decision.md` 是候选人决策材料，不把公司宣传直接当事实。
+
+## 面试后最小路径
+
+先用 `new-debrief --quick --notes` / `--notes-file` 留证据；收到结果后用 `record-outcome --sync` 一次同步。完整模板只在需要深挖时使用，在原复盘补充，不把模板空白当作必须完成的任务。结果以 frontmatter 为准。读取边界见 [面试后维护 skill](../../.agents/skills/interview-aftercare/SKILL.md)。

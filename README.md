@@ -64,6 +64,28 @@ node scripts/workbench.mjs new-retro --cycle 2026-autumn
 
 Calendar.app 的 upsert 在检测到历史版本误按分钟写入的旧提醒时，会在修改前失败，请先在 Calendar.app 中核对并清理旧提醒。脚本不会隐式删除、重建整个事件；正常事件按稳定 eventId 原地更新。
 
+## 面试后的轻量路径
+
+面试刚结束时先留几条现场证据，深度核验和补答可以稍后在同一文件补充：
+
+```bash
+node scripts/workbench.mjs new-debrief --slug my-company-infra --stage r1 --quick --notes "回忆：问了任务重试；回答了幂等性。未知：评价标准。"
+# 没有该轮唯一已结束日程时，显式追加 --date YYYY-MM-DD。
+# 多行记录可改用 --notes-file PATH。
+```
+
+快速记录默认结果为待反馈，自动补齐主档与面试工作区的索引。已有复盘拒绝覆盖；继续在原文件补充，不另建同场事实记录。
+
+收到明确反馈后，可用一次调用回填结果与显式下一步：
+
+```bash
+node scripts/workbench.mjs record-outcome --slug my-company-infra --stage r1 --result 通过 --next-action "等待下一轮定档" --sync
+```
+
+`--sync` 同步复盘结果、主档显式字段、主档 / README 索引和速览 Gate。Gate / status 未提供就保留原值，结果不会自动升级 Gate；显式进入 G3 时要求全部必填非 HR 轮次都有明确通过结果。多文件写入失败会还原已写文件，原始叙事与手工内容保留。多个复盘候选需指定 `--debrief`，不猜测反馈属于哪场。
+
+原有完整 `new-debrief` 与不带 `--sync` 的录入方式仍兼容。Agent 的轻量读取与操作边界见 [面试后维护 skill](.agents/skills/interview-aftercare/SKILL.md)。
+
 ## 简历
 
 先填写 [素材总账](INVENTORY.md)，再修改 `resume/resume.html` 的身份字段和 `resume/resume-content.html` 的正文。

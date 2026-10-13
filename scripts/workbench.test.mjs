@@ -1,4 +1,6 @@
-import test from 'node:test';
+import fs from 'node:fs/promises';
+import { commitChanges } from './debrief-workflow.mjs';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -930,4 +932,113 @@ test('workbench retro 聚合周期结果并列出未收尾事项', async () => {
     await rm(debriefFile, { force: true });
     await rm(retroFile, { force: true });
   }
+});
+
+
+async function aftercareFixture(runTest) {
+  const slug = `test-aftercare-${process.pid}`;
+  const dir = join(ROOT, 'interview-prep/opportunities', slug);
+  const readmePath = join(ROOT, 'interview-prep/README.md');
+  const readmeBefore = await readFile(readmePath, 'utf8');
+  const files = [];
+  try {
+    const created = await run(WORKBENCH, ['new-opportunity', '--slug', slug, '--company', '现场记录测试公司', '--role', '测试岗位', '--type', 'internship', '--cycle', '2026-autumn']);
+    assert.equal(created.code, 0, created.stderr);
+    const flow = await run(WORKBENCH, ['set-process', '--slug', slug, '--source', '测试口径', '--as-of', '2026-01-01', '--round', 'r1|technical|第一技术面', '--round', 'r2|technical|第二技术面', '--round', 'hr|hr|HR 面']);
+    assert.equal(flow.code, 0, flow.stderr);
+    await run(WORKBENCH, ['set-gate', '--slug', slug, '--gate', 'G2']);
+    await runTest({ slug, dir, files, readmePath });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    for (const path of files) await rm(path, { force: true });
+    await writeFile(readmePath, readmeBefore);
+  }
+}
+
+test('快速记录只需现场证据，按本轮日程推导日期并补齐两个索引', async () => {
+  await aftercareFixture(async ({ slug, dir, files, readmePath }) => {
+    for (const [stage, start] of [['r1', '2026-01-04T23:30:00Z'], ['r2', '2099-01-01T10:00:00+08:00']]) {
+      const calendar = join(ROOT, 'private-notes/calendar', `${slug}-${stage}.json`);
+      files.push(calendar);
+      await writeFile(calendar, JSON.stringify({ version: 1, eventId: `${slug}-${stage}`, stage, start, durationMinutes: 60 }));
+    }
+    const debrief = join(ROOT, 'interview-prep/debriefs', `2026-01-05-${slug}-r1.md`); files.push(debrief);
+    const empty = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--quick']);
+    assert.notEqual(empty.code, 0); await assert.rejects(readFile(debrief));
+    const result = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--quick', '--notes', '回忆：问了队列重试；回答了幂等性。未知：评价标准。']);
+    assert.equal(result.code, 0, result.stderr);
+    const content = await readFile(debrief, 'utf8');
+    assert.match(content, /^date: 2026-01-05$/m);
+    assert.match(content, /^result: 待反馈$/m);
+    assert.match(content, /回答了幂等性/);
+    assert.doesNotMatch(content, /^## 正式补答/m);
+    assert.match(await readFile(join(dir, 'record.md'), 'utf8'), new RegExp(`../../debriefs/2026-01-05-${slug}-r1.md`));
+    assert.match(await readFile(readmePath, 'utf8'), new RegExp(`debriefs/2026-01-05-${slug}-r1.md`));
+    assert.doesNotMatch(await readFile(readmePath, 'utf8'), /尚无实际面试/);
+    const before = await readFile(debrief, 'utf8');
+    const duplicate = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--date', '2026-01-05', '--quick', '--notes', '覆盖', '--force']);
+    assert.notEqual(duplicate.code, 0); assert.equal(await readFile(debrief, 'utf8'), before);
+    const upcoming = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r2', '--quick', '--notes', '未知']);
+    assert.notEqual(upcoming.code, 0);
+    const invalid = await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'wrong', '--date', '2026-01-05', '--quick', '--notes', '未知']);
+    assert.notEqual(invalid.code, 0);
+    const validate = await run(WORKBENCH, ['validate']); assert.equal(validate.code, 0, validate.stderr);
+  });
+});
+
+test('一次反馈回填更新复盘、显式字段和投影；重复执行不重复索引', async () => {
+  await aftercareFixture(async ({ slug, dir, files, readmePath }) => {
+    const debrief = join(ROOT, 'interview-prep/debriefs', `2026-01-05-${slug}-r1.md`); files.push(debrief);
+    await writeFile(readmePath, (await readFile(readmePath, 'utf8')) + `\n| 机会 | Gate | 状态 | 主档 |\n|---|---|---|---|\n| 测试 | G2 | 面试邀约 | [主档](opportunities/${slug}/record.md) |\n`);
+    await writeFile(join(dir, 'quick-brief.md'), '# 保留原准备材料\n\n> 当前 Gate：G2 · 已定档\n\n原始准备正文\n');
+    assert.equal((await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--date', '2026-01-05', '--quick', '--notes', '用户回忆的真实回答'])).code, 0);
+    const args = ['record-outcome', '--slug', slug, '--stage', 'r1', '--result', '未通过', '--status', '未通过', '--gate', 'G4', '--next-action', '保留复盘，流程关闭', '--sync'];
+    const result = await run(WORKBENCH, args); assert.equal(result.code, 0, result.stderr);
+    const record = await readFile(join(dir, 'record.md'), 'utf8');
+    assert.match(record, /^gate: G4$/m); assert.match(record, /^status: 未通过$/m);
+    assert.match(await readFile(debrief, 'utf8'), /^result: 未通过$/m);
+    const brief = await readFile(join(dir, 'quick-brief.md'), 'utf8'); assert.match(brief, /当前 Gate： G4/); assert.match(brief, /原始准备正文/);
+    const readme = await readFile(readmePath, 'utf8'); assert.match(readme, /\| 测试 \| G4 \| 未通过 \|/);
+    const repeated = await run(WORKBENCH, args); assert.equal(repeated.code, 0, repeated.stderr);
+    assert.equal(await readFile(readmePath, 'utf8'), readme);
+    assert.equal(await readFile(join(dir, 'record.md'), 'utf8'), record);
+    assert.match(await readFile(debrief, 'utf8'), /用户回忆的真实回答/);
+  });
+});
+
+test('结果同步不自动升 Gate，拒绝提前 G3 与模糊轮次选择', async () => {
+  await aftercareFixture(async ({ slug, dir, files }) => {
+    for (const stage of ['r1', 'r2']) {
+      files.push(join(ROOT, 'interview-prep/debriefs', `2026-01-05-${slug}-${stage}.md`));
+      assert.equal((await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', stage, '--date', '2026-01-05', '--quick', '--notes', '回忆：记录了问题'])).code, 0);
+    }
+    const ambiguous = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--result', '通过', '--sync']); assert.notEqual(ambiguous.code, 0);
+    const passed = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r1', '--result', '通过', '--sync']); assert.equal(passed.code, 0, passed.stderr);
+    const before = await readFile(join(dir, 'record.md'), 'utf8'); assert.match(before, /^gate: G2$/m);
+    const premature = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r2', '--result', '进入下一轮', '--gate', 'G3', '--sync']); assert.notEqual(premature.code, 0);
+    assert.equal(await readFile(join(dir, 'record.md'), 'utf8'), before);
+    const completed = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r2', '--result', '通过', '--gate', 'G3', '--sync']); assert.equal(completed.code, 0, completed.stderr);
+    const extraName = `2026-01-06-${slug}-r1.md`; files.push(join(ROOT, 'interview-prep/debriefs', extraName));
+    assert.equal((await run(WORKBENCH, ['new-debrief', '--slug', slug, '--stage', 'r1', '--date', '2026-01-06', '--quick', '--notes', '  保留缩进的回忆\n    第二行'])).code, 0);
+    const ambiguousStage = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r1', '--result', '通过', '--sync']); assert.notEqual(ambiguousStage.code, 0);
+    const exact = await run(WORKBENCH, ['record-outcome', '--slug', slug, '--stage', 'r1', '--debrief', extraName, '--result', '通过', '--sync']); assert.equal(exact.code, 0, exact.stderr);
+    assert.match(await readFile(join(ROOT, 'interview-prep/debriefs', extraName), 'utf8'), /  保留缩进的回忆/);
+    assert.match(await readFile(join(dir, 'record.md'), 'utf8'), /^gate: G3$/m);
+  });
+});
+
+test('多文件提交中途失败时还原先前写入，不留下临时文件', async () => {
+  const temp = await mkdtemp(join(ROOT, 'private-notes', 'aftercare-transaction-'));
+  const first = join(temp, 'first.md'); const second = join(temp, 'second.md');
+  await writeFile(first, 'first-before'); await writeFile(second, 'second-before');
+  const originalRename = fs.rename;
+  const tracker = mock.method(fs, 'rename', async (from, to) => {
+    if (to === second) throw new Error('simulated filesystem failure');
+    return originalRename(from, to);
+  });
+  try {
+    await assert.rejects(commitChanges(new Map([[first, { before: 'first-before', after: 'first-after' }], [second, { before: 'second-before', after: 'second-after' }]])), /filesystem failure/);
+    assert.equal(await readFile(first, 'utf8'), 'first-before'); assert.equal(await readFile(second, 'utf8'), 'second-before');
+    assert.deepEqual((await fs.readdir(temp)).sort(), ['first.md', 'second.md']);
+  } finally { tracker.mock.restore(); await rm(temp, { recursive: true, force: true }); }
 });

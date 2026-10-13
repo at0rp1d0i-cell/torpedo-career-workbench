@@ -46,6 +46,7 @@ node scripts/workbench.mjs context --slug SLUG
 
 - `context` 是动态 routing manifest（路由清单），不是新的事实源；状态与内容仍由 `record.md`、`due-diligence.md`、关联复盘和其他权威文件负责。
 - 必须在回复用户前完整读取输出中的“必读文件”；不能只读 `interview-prep/README.md`、`quick-brief.md` 或搜索摘要。按需文件只在当前问题涉及其主题时读取。
+- 面试后仅做现场记录或按明确招聘方反馈写入的机械维护，走 [interview-aftercare](.agents/skills/interview-aftercare/SKILL.md) 轻量路径：读取主档、相关轮次日程和目标复盘即可，不重载尽调或全部其他轮叙事。技术核验、岗位判断、Offer 或职业决策仍按完整 context。
 - 输出为“默认禁止外部搜索”时，不得调用 Web Search、Browser 或外部研究子代理重复背调。只有用户明确要求刷新、现有材料明确记录且当前问题依赖关键缺口，或时效变化会影响当前面试 / Offer 决策时才可例外；例外前必须说明要补什么及原因。
 - 已尽调材料中的“待确认”通常是面试官 / HR 核验项，不自动构成再次联网搜索的理由。仓库没有的信息应标为未知，不用外部猜测补齐。
 - 输出为“需要补齐 G1 证据”时，先读主档并界定缺失证据面，再按第 4 节协议开展最小必要研究；不得重做已经存在的本地结论。
@@ -155,7 +156,8 @@ G1 判断的是“是否值得投入面试、岗位可能是什么”；不是 O
 - `set-gate` / `set-status` 只处理没有日程写入的人工状态修正；命令自动刷新 `updated-at`。`list` / `gate` / `audit` / `queue` 可读取带时区的私密日历输入推导时间状态，但不自动修改人工字段；`audit --strict` 只报告缺陷并以非零退出。`audit` 另输出「仓库一致性」段，覆盖手维护材料与主档状态的一致性——`interview-prep/README.md` 的岗位机会表 / 复盘索引 vs 实际目录、`quick-brief.md` 头部「当前 Gate」vs 主档 `gate`、旧模板主档缺 `opportunity-type` / `recruiting-cycle`；这些检查只报告，不自动修改任何文件。
 - `audit` 的「面试材料 / 复盘」类检查（`missing-quick-brief`、`missing-question-script`、`missing-debrief`、`missing-closed-debrief`）只在机会确实存在**非笔试（`kind: assessment`）轮次**的活动（结构化日程或已建复盘）时触发。只排了笔试、尚未进入任何面试的机会——G2 常因笔试定档被 `schedule` 自动推进——不触发这些检查；`interview-process` 未配置时无法判定轮次类型，按「存在活动即要求」保守处理，避免漏报真实面试。笔试阶段的时间状态仍由 `next-action` 与 `queue` 表达，不靠审查告警。
 - `retro` 只读聚合周期结果、轮次通过情况与收尾清单，不修改任何文件；`new-retro` 只生成带当时快照的复盘草稿，默认拒绝覆盖。
-- `record-outcome` 仅按显式 `--gate` / `--status` / `--next-action` 和 `--result` 更新；可用 `--stage` 将结果绑定到具体轮次；复盘结果必须指定唯一待反馈复盘或显式文件名，不自动把“通过”升级为下一轮。
+- `record-outcome` 仅按显式 `--gate` / `--status` / `--next-action` 和 `--result` 更新；可用 `--stage` 将结果绑定到具体轮次；复盘结果必须指定唯一待反馈复盘或显式文件名，不自动把“通过”升级为下一轮。 可追加 `--sync` 同步主档 / README 索引与速览 Gate，并在文件写入失败时还原；不提供 Gate / status 就保持原值，显式 G3 必须全部必填非 HR 轮次已明确通过。
+- `new-debrief --quick` 用现场原话或标注为回忆的简短记录建档，默认结果为待反馈。仅从指定轮次唯一已结束日程推导日期；否则要求显式日期。自动补主档 / README 索引，拒绝 --force 覆盖，深度复盘在同一文件按需补充。
 - 脚手架的 company / role 缺省时从对应 `record.md` frontmatter 读取；显式参数可覆盖生成文档标题，但不改变主档事实。
 - 任何 Agent 修改机会或复盘文档后必须通过 `node scripts/workbench.mjs validate`；字段漂移、`context/index.json` 声明路径与文档间相对链接（`private-notes/` 等冻结归档除外）由校验器拒绝，不依赖措辞约定。
 
@@ -192,6 +194,7 @@ node --check scripts/dashboard.mjs
 node --check scripts/calendar.mjs
 node --check scripts/jd-intake.mjs
 node --check scripts/retro.mjs
+node --check scripts/debrief-workflow.mjs
 node --test scripts/workbench.test.mjs
 node scripts/workbench.mjs validate
 ```
